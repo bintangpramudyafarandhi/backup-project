@@ -1,4 +1,24 @@
-<h1 class="text-light">Register</h1>
+<style>
+  .add-employee-title {
+    font-family: 'Poppins';
+    font-weight: 600;
+  }
+
+  .form-label {
+    font-family: 'Poppins';
+  }
+
+  .button-label {
+    font-family: 'Poppins';
+  }
+
+  input {
+    font-family: 'Poppins';
+  }
+</style>
+
+<div class="container">
+<h1 class="add-employee-title mt-3">Add New Employee</h1>
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="exclamation-triangle-fill" viewBox="0 0 16 16">
@@ -19,21 +39,30 @@
   </div>
 <% } %>
 
-<form action="/register" method="post">
-  <div class="mb-3">
-    <label for="name" class="form-label text-light">Name</label>
+<form class="add-form" action="/admin/employee-list/add-employee" method="post">
+  <div class="mb-1">
+    <label for="name" class="form-label">Name</label>
     <input type="text" class="form-control" id="name" name="name" required>
   </div>
-  <div class="mb-3">
-    <label for="email" class="form-label text-light">Email</label>
+  <div class="mb-1">
+    <label for="email" class="form-label">Email Address</label>
     <input type="email" class="form-control" id="email" name="email" required>
   </div>
-  <div class="mb-3">
-    <label for="password" class="form-label text-light">Password</label>
+  <div class="mb-1">
+    <label for="mobile" class="form-label">Phone No.</label>
+    <input type="tel" class="form-control" id="mobile" name="mobile" required>
+  </div>
+  <div class="mb-2">
+    <label for="password" class="form-label">Password</label>
     <input type="password" class="form-control" id="password" name="password" required>
   </div>
-  <button type="submit" class="btn btn-primary">Register</button>
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <a href="/admin/employee-list" class="btn btn-danger button-label">Cancel</a>
+    </div>
+    <div>
+      <button type="submit" class="btn btn-primary button-label">Add New Employee</button>
+    </div>
+  </div>
 </form>
-
-<br>
-<p style="color: gray;">Already have an account? <a href="/login">Login</a></p>
+</div>

@@ -1,0 +1,75 @@
+<style>
+    .employee-list-title {
+        font-family: 'Poppins';
+        font-weight: 600;
+    }
+
+    .add-new {
+        font-family: 'Poppins';
+    }
+
+    .employee-list-table {
+        margin-top: 20px;
+    }
+
+    table th {
+        font-family: 'Poppins';
+        font-size: 20px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .top-left {
+        border-top-left-radius: 10px;
+    }
+
+    .top-right {
+        border-top-right-radius: 10px;
+    }
+
+    table td {
+        font-family: 'Poppins';
+    }
+</style>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            <h1 class="employee-list-title">Employee List</h1>
+        </div>
+        <div>
+            <a class="btn btn-success add-new" href="/admin/employee-list/add-employee"><i class="fa-solid fa-user-plus"></i> Add New Employee</a>
+        </div>
+    </div>
+    <% if (employee.length < 1) { %>
+        <p>Data not Found!</p>
+       <% } else { %>
+           <table class="table employee-list-table text-center">
+               <thead>
+                 <tr class="bg-primary">
+                   <th scope="col" class="top-left">#</th>
+                   <th scope="col">Name</th>
+                   <th scope="col">Email</th>
+                   <th scope="col">Contact No.</th>
+                   <th scope="col" class="top-right">Actions</th>
+                 </tr>
+               </thead>
+               <tbody class="table-group-divider">
+               <% i = 0 %>
+               <% employee.forEach(employees => { %>
+                       <tr>
+                         <td><%= i += 1 %></td>
+                         <td><%= employees.name %></td>
+                         <td><%= employees.email %></td>
+                         <td><%= employees.mobile %> </td>
+                         <td>
+                           <a class="btn btn-primary" href="/admin/employee-list/<%=employees.name%>"><i class="fa-solid fa-info"></i></a>
+                           <a class="btn btn-success" href="/admin/employee-list/edit/<%=employees.name%>"><i class="fa-solid fa-pen"></i></a>
+                           <a class="btn btn-danger" href="/admin/employee-list/delete/<%=employees.name%>" onclick="return confirm('Are you sure you want to delete <%=employees.name%>?')"><i class="fa-solid fa-trash"></i></a>
+                         </td>
+                       </tr>
+               <% }) %>
+               </tbody>
+           </table> 
+       <% } %>
+</div> 

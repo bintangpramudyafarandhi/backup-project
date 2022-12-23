@@ -38,25 +38,110 @@ app.get('/', call.checkNotAuthenticated, (req, res) => {
     })
 })
 
-app.get('/register', call.checkAuthenticated, (req, res) => {
-    res.render('register', {
-        layout: "template/main",
+app.get('/login', call.checkAuthenticated, (req, res) => {
+    res.render('login', {
+        layout: "login",
+        title: "Login"
+    })
+})
+
+app.post("/login", async (req, res) => {
+    const pw = await call.matchPassword(req.body.email);
+    console.log(pw);
+    if (pw.length > 0) {
+      const isMatch = await bcrypt.compare(req.body.password, pw[0].password);
+  
+      if (!isMatch) {
+        console.log("password salah");
+        res.redirect("login");
+      } else {
+        const role = await call.authenticateRole(req.body.email);
+        console.log(role);
+        req.session.isAuth = true;
+        req.session.role = role;
+        if (role == "superadmin") {
+          return res.redirect("/superadmin");
+        }
+        else if (role == "admin") {
+          return res.redirect("/admin");
+        } else if(role == "user") {
+          return res.redirect("/user");
+        }else{
+          res.send('error')
+        }
+      }
+    } else {
+      console.log("username salah");
+      res.redirect("login");
+    }
+});
+
+// app.post('/login', passport.authenticate('local'), async(req,res) => {
+//     const {rows:findUser} = await pool.query(`SELECT role FROM users WHERE role = 'user';`)
+//     const {rows:findAdmin} = await pool.query(`SELECT role FROM public.admin WHERE role = 'admin';`)
+
+//     if (findUser.length > 0) {
+//         res.redirect('/user')
+//     } else if (findAdmin.length > 0) {
+//         res.redirect('/admin')
+//     }
+// })
+
+// app.post('/login', passport.authenticate('local', {
+//         successRedirect: '/',
+//         failureRedirect: '/login',
+//         failureFlash: true
+//     })
+// )
+
+app.get('/logout', function(req, res, next) {
+    req.logout(function(err) {
+        if (err) {return next(err)}
+        req.flash('success_msg', 'You have logged out')
+        res.redirect('/login')
+    })
+})
+
+app.get('/user', (req,res) => {
+    res.send('ini user')
+})
+
+app.get('/admin', (req, res) => {
+    res.render('admin/index.ejs', {
+        layout: "template/admin-sidebar",
+        title: "Admin Dashboard"
+    })
+})
+
+app.get('/admin/employee-list', async (req, res) => {
+    const employee = await call.loadEmployee()
+    res.render('admin/employee-list', {
+        layout: "template/admin-sidebar",
+        title: "Employee List",
+        employee
+    })
+})
+
+app.get('/admin/employee-list/add-employee', call.checkAuthenticated, (req, res) => {
+    res.render('admin/add-employee', {
+        layout: "template/admin-sidebar",
         title: "Add New Employee"
     })
 })
 
-app.post('/register', async (req, res) => {
-    let { name, email, password } = req.body 
+app.post('/admin/employee-list/add-employee', async (req, res) => {
+    let { name, email, mobile, password } = req.body 
 
     console.log({
         name,
         email,
+        mobile,
         password,
     });
 
     let errors = []
 
-    if (!name || !email || !password) {
+    if (!name || !email || !mobile || !password) {
         errors.push({ message: 'Please fill out all fields' })
     }
 
@@ -65,13 +150,13 @@ app.post('/register', async (req, res) => {
     }
 
     if (errors.length > 0) {
-        res.render('register', {
+        res.render('admin/add-employee', {
             errors,
-            layout: "template/main",
+            layout: "template/admin-sidebar",
             title: "Add New Employee"
         })
     }else{
-        req.body.role = 'admin'
+        req.body.role = 'user'
         let hashedPassword = await bcrypt.hash(password, 10)
         console.log(hashedPassword);
 
@@ -86,23 +171,23 @@ app.post('/register', async (req, res) => {
 
                 if (results.rows.length > 0) {
                     errors.push({ message: 'Email already registered'})
-                    res.render('register', {
+                    res.render('admin/add-employee', {
                         errors,
-                        layout: "template/main",
+                        layout: "template/admin-sidebar",
                         title: "Add New Employee"
                     })
-                }else{
+                } else {
                     pool.query(
-                        `INSERT INTO admin (name, email, password, role)
-                        VALUES ($1, $2, $3, $4)`, 
-                        [name, email, hashedPassword, req.body.role], 
+                        `INSERT INTO users (name, email, mobile, password, role)
+                        VALUES ($1, $2, $3, $4, $5)`, 
+                        [name, email, mobile, hashedPassword, req.body.role], 
                         (err, results) => {
                             if (err){
                                 throw err
                             }
                             console.log(results.rows);
                             req.flash('success_msg', 'You are now registered, please log in')
-                            res.redirect('/login')
+                            res.redirect('/admin/employee-list')
                         }
                     )
                 }
@@ -111,44 +196,42 @@ app.post('/register', async (req, res) => {
     }
 })
 
-app.get('/login', call.checkAuthenticated, (req, res) => {
-    res.render('login', {
-        layout: "login",
-        title: "Login"
+app.get('/admin/employee-list/:id', async (req, res) => {
+    const getDetail = await call.detail(req.params.id)
+    const params = req.params.id
+    res.render('admin/employee-detail', {
+        layout: "template/admin-sidebar",
+        title: "Employee Detail",
+        getDetail,
+        params
     })
 })
 
-// app.post('/login',async(req,res)=>{
-//     const tstst = call.findEmail(req.body.email)
-//     req.session.role = tsts[0].role
-//     if(successRedirect){
-//         res.redirect('/')
-//     }else{
-//         res.redirect('/login')
-//     }
-// })
-
-app.post('/login', passport.authenticate('local', {
-        successRedirect: '/',
-        failureRedirect: '/login',
-        failureFlash: true
+app.get("/admin/employee-list/edit/:name", async (req,res) => {
+    const getDetail = await call.detail(req.params.name)
+    const params = req.params.name
+    res.render('admin/employee-edit', {
+      params,
+      layout: "template/admin-sidebar",
+      title: "Edit Employee",
+      getDetail: getDetail[0],
     })
-)
-
-app.get('/user',call.isUser,(req,res)=>{
-    res.send('ini user')
 })
 
-app.get('/admin',call.isAdmin, (req,res)=>{
-    res.send("ini admin")
+app.post("/admin/employee-list/edit/:name", async (req, res) => {
+    let where = req.params.name
+    let name = req.body.name
+    let email = req.body.email
+    let mobile = req.body.mobile
+       
+    await pool.query(`UPDATE users SET "name"='${name}',"email"='${email}',"mobile"='${mobile}' WHERE "name" = '${where}'`)
+    res.redirect("/admin/employee-list")
 })
 
-app.get('/logout', function(req, res, next) {
-    req.logout(function(err) {
-        if (err) {return next(err)}
-        req.flash('success_msg', 'You have logged out')
-        res.redirect('/login')
-    })
+app.get('/admin/employee-list/delete/:name', (req, res) => {
+    console.log(req.params.name);
+    const contact = call.postgredelete(req.params.name)
+    res.redirect('/admin/employee-list')
 })
 
 app.listen(PORT, () => {
